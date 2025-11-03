@@ -1,0 +1,154 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Usuarios - Solo pueden leer/escribir su propia información
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+    
+    // Roles - Solo lectura para usuarios autenticados
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins pueden modificar (implementar lógica admin después)
+    }
+    
+    // Relación usuario-rol - Lectura para autenticados
+    match /user_roles/{userRoleId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins pueden asignar roles
+    }
+    
+    // Estilos de aprendizaje - Lectura para todos los autenticados
+    match /learning_styles/{styleId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Estilo de aprendizaje del usuario
+    match /user_learning_style/{userStyleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Assessments (Tests) - Lectura para todos los autenticados
+    match /assessments/{assessmentId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Preguntas - Lectura para todos los autenticados
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Opciones/Respuestas - Lectura para todos los autenticados
+    match /choices/{choiceId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Intentos de assessment - Los usuarios pueden crear y leer sus propios intentos
+    match /assessment_attempts/{attemptId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // Respuestas de intentos - Los usuarios pueden crear y leer sus propias respuestas
+    match /attempt_answers/{answerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Cursos - Lectura para todos los autenticados
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Módulos - Lectura para todos los autenticados
+    match /modules/{moduleId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Contenidos - Lectura para todos los autenticados
+    match /contents/{contentId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Inscripciones - Los usuarios pueden ver sus propias inscripciones
+    match /enrollments/{enrollmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Progreso de contenido - Los usuarios pueden leer y actualizar su propio progreso
+    match /content_progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // Progreso de usuario en cursos - Los usuarios pueden leer y actualizar su propio progreso
+    match /user_progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // Insignias - Lectura para todos los autenticados
+    match /badges/{badgeId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Solo admins
+    }
+    
+    // Insignias de usuario - Los usuarios pueden ver sus propias insignias
+    match /user_badges/{userBadgeId} {
+      allow read: if isAuthenticated();
+      allow create: if false; // Sistema crea las insignias
+      allow update, delete: if false;
+    }
+    
+    // Recomendaciones - Los usuarios pueden ver sus propias recomendaciones
+    match /recommendations/{recommendationId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Sistema genera recomendaciones
+    }
+    
+    // Logs de auditoría - Solo lectura para admins (implementar después)
+    match /audit_logs/{logId} {
+      allow read: if false; // Solo admins
+      allow write: if false; // Sistema genera logs
+    }
+    
+    // Notificaciones - Los usuarios pueden ver sus propias notificaciones
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create: if false; // Sistema crea notificaciones
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+  }
+}
+

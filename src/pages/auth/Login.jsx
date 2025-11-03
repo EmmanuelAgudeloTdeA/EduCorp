@@ -1,15 +1,14 @@
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
-import { firebaseApp } from "../../config/firebase";
 import { Bounce, toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import Card from "../../components/auth/Card";
 import Input from "../../components/auth/Input";
 import Button from "../../components/auth/Button";
-
-const auth = getAuth(firebaseApp);
+import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
+  const { auth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -20,6 +19,7 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/dashboard');
     } catch (e) {
+      console.log(e.message);
       toast.error('Correo o contraseña incorrecto', {
         position: "top-right",
         autoClose: 4000,
