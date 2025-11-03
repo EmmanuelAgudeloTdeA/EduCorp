@@ -1,15 +1,14 @@
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
-import { firebaseApp } from "../../config/firebase";
 import { Bounce, toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import Card from "../../components/auth/Card";
 import Input from "../../components/auth/Input";
 import Button from "../../components/auth/Button";
-
-const auth = getAuth(firebaseApp);
+import { useAuth } from "../../context/AuthContext";
 
 const Register = () => {
+  const { auth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
