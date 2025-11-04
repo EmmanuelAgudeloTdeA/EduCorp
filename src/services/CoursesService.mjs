@@ -3,8 +3,24 @@ import {
   getDocument, 
   addDocument, 
   updateDocument,
+  deleteDocument,
   queryCollection 
 } from '../api/firebase/firestore.js';
+
+/**
+ * Obtener todos los cursos (activos e inactivos)
+ */
+export const getAllCoursesAdmin = async () => {
+  try {
+    const courses = await queryCollection('courses', [
+      { type: 'orderBy', field: 'createdAt', direction: 'desc' }
+    ]);
+    return courses;
+  } catch (error) {
+    console.error('Error obteniendo cursos:', error);
+    return [];
+  }
+};
 
 /**
  * Obtener todos los cursos activos
@@ -234,6 +250,149 @@ export const updateUserProgress = async (userId, courseId, progressData) => {
     return true;
   } catch (error) {
     console.error('Error actualizando progreso:', error);
+    throw error;
+  }
+};
+
+/**
+ * Crear un nuevo curso
+ */
+export const createCourse = async (courseData) => {
+  try {
+    const newCourse = {
+      ...courseData,
+      isActive: courseData.isActive ?? true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const courseId = await addDocument('courses', newCourse);
+    return courseId;
+  } catch (error) {
+    console.error('Error creando curso:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualizar un curso existente
+ */
+export const updateCourse = async (courseId, courseData) => {
+  try {
+    const updatedData = {
+      ...courseData,
+      updatedAt: new Date().toISOString()
+    };
+
+    await updateDocument('courses', courseId, updatedData);
+    return true;
+  } catch (error) {
+    console.error('Error actualizando curso:', error);
+    throw error;
+  }
+};
+
+/**
+ * Eliminar un curso (soft delete)
+ */
+export const deleteCourse = async (courseId) => {
+  try {
+    await updateDocument('courses', courseId, {
+      isActive: false,
+      deletedAt: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error eliminando curso:', error);
+    throw error;
+  }
+};
+
+/**
+ * Eliminar un curso permanentemente
+ */
+export const deleteCoursePermament = async (courseId) => {
+  try {
+    await deleteDocument('courses', courseId);
+    return true;
+  } catch (error) {
+    console.error('Error eliminando curso permanentemente:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener el progreso de un usuario en un curso específico
+ */
+export const getCourseProgress = async (userId, courseId) => {
+  try {
+    const progressRecords = await queryCollection('user_progress', [
+      { type: 'where', field: 'userId', operator: '==', value: userId },
+      { type: 'where', field: 'courseId', operator: '==', value: courseId }
+    ]);
+
+    if (progressRecords.length === 0) {
+      return null;
+    }
+
+    return progressRecords[0];
+  } catch (error) {
+    console.error('Error obteniendo progreso del curso:', error);
+    return null;
+  }
+};
+
+/**
+ * Verificar si un usuario está inscrito en un curso
+ */
+export const isUserEnrolled = async (userId, courseId) => {
+  try {
+    const enrollments = await queryCollection('enrollments', [
+      { type: 'where', field: 'userId', operator: '==', value: userId },
+      { type: 'where', field: 'courseId', operator: '==', value: courseId }
+    ]);
+
+    return enrollments.length > 0;
+  } catch (error) {
+    console.error('Error verificando inscripción:', error);
+    return false;
+  }
+};
+
+/**
+ * Marcar una lección como completada
+ */
+export const markLessonComplete = async (userId, courseId, lessonId) => {
+  try {
+    const progressRecords = await queryCollection('user_progress', [
+      { type: 'where', field: 'userId', operator: '==', value: userId },
+      { type: 'where', field: 'courseId', operator: '==', value: courseId }
+    ]);
+
+    if (progressRecords.length === 0) {
+      throw new Error('No se encontró registro de progreso');
+    }
+
+    const progress = progressRecords[0];
+    const completedLessons = progress.completedLessons || [];
+    
+    if (!completedLessons.includes(lessonId)) {
+      completedLessons.push(lessonId);
+      
+      const course = await getCourseById(courseId);
+      const totalLessons = course?.modules?.reduce((total, module) => 
+        total + (module.lessons?.length || 0), 0) || 0;
+      
+      await updateUserProgress(userId, courseId, {
+        completedLessons: completedLessons.length,
+        totalLessons,
+        completedLessonIds: completedLessons
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error marcando lección como completada:', error);
     throw error;
   }
 };

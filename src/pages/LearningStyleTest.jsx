@@ -6,14 +6,16 @@ import {
   saveAssessmentAttempt,
   saveAttemptAnswers,
   calculateLearningStyle,
-  saveUserLearningStyle
+  saveUserLearningStyle,
+  getLearningStyleById
 } from '../services/LearningStylesService.mjs';
 import { updateUserLearningStyle } from '../services/UsersService.mjs';
 import {
   CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 const LearningStyleTest = () => {
@@ -26,6 +28,8 @@ const LearningStyleTest = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [error, setError] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [learningStyleResult, setLearningStyleResult] = useState(null);
 
   useEffect(() => {
     loadAssessment();
@@ -94,7 +98,7 @@ const LearningStyleTest = () => {
         userId: user.uid,
         assessmentId: assessment.id,
         status: 'completed',
-        score: 0, // Se puede calcular si es necesario
+        score: 0,
       });
 
       // 2. Guardar las respuestas
@@ -114,15 +118,25 @@ const LearningStyleTest = () => {
       // 5. Actualizar el documento del usuario
       await updateUserLearningStyle(user.uid, styleId);
 
-      // 6. Redirigir al dashboard
-      alert('¡Test completado con éxito! Tu estilo de aprendizaje ha sido asignado.');
-      navigate('/dashboard');
+      // 6. Obtener información del estilo de aprendizaje
+      const learningStyle = await getLearningStyleById(styleId);
+      setLearningStyleResult(learningStyle);
+
+      // 7. Mostrar alert con el resultado
+      alert(`¡Felicitaciones! 🎉\n\nTu estilo de aprendizaje es: ${learningStyle.name}\n\nAhora tu experiencia de aprendizaje será personalizada según tus preferencias.`);
+
+      // 8. Mostrar resultado
+      setShowResult(true);
     } catch (error) {
       console.error('Error al enviar el test:', error);
       alert('Error al procesar el test. Por favor, intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleGoToDashboard = () => {
+    navigate('/dashboard');
   };
 
   if (loading) {
@@ -162,6 +176,121 @@ const LearningStyleTest = () => {
     return null;
   }
 
+  // Pantalla de resultado
+  if (showResult && learningStyleResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Confetti Effect */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-6 animate-bounce">
+              <SparklesIcon className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              ¡Test Completado! 🎉
+            </h1>
+            <p className="text-xl text-gray-600">
+              Hemos identificado tu estilo de aprendizaje
+            </p>
+          </div>
+
+          {/* Result Card */}
+          <div className="bg-white rounded-xl shadow-2xl overflow-hidden mb-6">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <h2 className="text-3xl font-bold text-white text-center">
+                Tu estilo de aprendizaje es:
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              {/* Learning Style Name */}
+              <div className="text-center mb-6">
+                <h3 className="text-4xl font-bold text-blue-600 mb-2">
+                  {learningStyleResult.name}
+                </h3>
+                {learningStyleResult.shortName && (
+                  <p className="text-lg text-gray-500">
+                    ({learningStyleResult.shortName})
+                  </p>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  ¿Qué significa esto?
+                </h4>
+                <p className="text-gray-700 leading-relaxed">
+                  {learningStyleResult.description}
+                </p>
+              </div>
+
+              {/* Characteristics */}
+              {learningStyleResult.characteristics && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                    Características principales:
+                  </h4>
+                  <ul className="space-y-2">
+                    {(Array.isArray(learningStyleResult.characteristics) 
+                      ? learningStyleResult.characteristics 
+                      : learningStyleResult.characteristics.split('\n')
+                    ).filter(c => c && c.trim()).map((char, index) => (
+                      <li key={index} className="flex items-start">
+                        <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{char}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {learningStyleResult.recommendations && (
+                <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                    💡 Recomendaciones para ti:
+                  </h4>
+                  <p className="text-gray-700 leading-relaxed">
+                    {learningStyleResult.recommendations}
+                  </p>
+                </div>
+              )}
+
+              {/* Next Steps */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  🚀 Siguientes pasos
+                </h4>
+                <p className="text-gray-700 mb-4">
+                  Ahora que conoces tu estilo de aprendizaje, nuestro sistema personalizará 
+                  el contenido de tus cursos para adaptarse mejor a tu forma de aprender.
+                </p>
+                <p className="text-sm text-gray-600">
+                  Puedes ver tu estilo de aprendizaje en cualquier momento desde tu perfil.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="text-center">
+            <button
+              onClick={handleGoToDashboard}
+              className="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
+            >
+              Ir al Dashboard
+              <ChevronRightIcon className="w-6 h-6 ml-2" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantalla del test
   const currentQuestion = assessment.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / assessment.questions.length) * 100;
   const isLastQuestion = currentQuestionIndex === assessment.questions.length - 1;
@@ -213,7 +342,7 @@ const LearningStyleTest = () => {
                 }`}
               >
                 <div className="flex items-center">
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 ${
+                  <div className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 ${
                     answers[currentQuestion.id]?.choiceId === choice.id
                       ? 'border-blue-600 bg-blue-600'
                       : 'border-gray-300'
@@ -267,7 +396,7 @@ const LearningStyleTest = () => {
               {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Enviando...
+                  Procesando...
                 </>
               ) : (
                 <>
