@@ -46,16 +46,16 @@ const Sidebar = () => {
       icon: DocumentTextIcon,
       label: "Gestión de Cursos",
     },
-    {
-      to: "/dashboard/admin/analytics",
-      icon: ChartBarIcon,
-      label: "Analíticas",
-    },
-    {
-      to: "/dashboard/admin/settings",
-      icon: CogIcon,
-      label: "Configuración",
-    },
+    // {
+    //   to: "/dashboard/admin/analytics",
+    //   icon: ChartBarIcon,
+    //   label: "Analíticas",
+    // },
+    // {
+    //   to: "/dashboard/admin/settings",
+    //   icon: CogIcon,
+    //   label: "Configuración",
+    // },
   ];
 
   return (
