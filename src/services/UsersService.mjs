@@ -1,6 +1,14 @@
-import { getDocument, updateDocument, getCollection } from '../api/firebase/firestore';
+import { 
+  getDocument, 
+  updateDocument, 
+  getCollection, 
+  addDocument, 
+  deleteDocument,
+  queryCollection 
+} from '../api/firebase/firestore';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../api/firebase/config';
+import { db, auth } from '../api/firebase/config';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 /**
  * Obtiene los roles de un usuario
@@ -72,6 +80,215 @@ export const updateUserLearningStyle = async (userId, learningStyleId) => {
     });
   } catch (error) {
     console.error('Error al actualizar estilo de aprendizaje:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene un usuario por ID
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Object>} Datos del usuario
+ */
+export const getUserById = async (userId) => {
+  try {
+    return await getDocument('users', userId);
+  } catch (error) {
+    console.error('Error al obtener usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Crear un nuevo usuario
+ * @param {Object} userData - Datos del usuario
+ * @returns {Promise<string>} ID del usuario creado
+ */
+export const createUser = async (userData) => {
+  try {
+    // Crear usuario en Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(
+      auth, 
+      userData.email, 
+      userData.password
+    );
+
+    const user = userCredential.user;
+
+    // Actualizar perfil con displayName
+    if (userData.displayName) {
+      await updateProfile(user, {
+        displayName: userData.displayName
+      });
+    }
+
+    // Crear documento en Firestore
+    const userDoc = {
+      email: userData.email,
+      displayName: userData.displayName || '',
+      name: userData.name || userData.displayName || '',
+      learningStyleId: userData.learningStyleId || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await addDocument('users', userDoc, user.uid);
+
+    // Asignar rol por defecto (estudiante)
+    const roles = await queryCollection('roles', [
+      { type: 'where', field: 'name', operator: '==', value: 'student' }
+    ]);
+
+    if (roles.length > 0) {
+      await addDocument('user_roles', {
+        userId: user.uid,
+        roleId: roles[0].id,
+        assignedAt: new Date().toISOString()
+      });
+    }
+
+    return user.uid;
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualizar un usuario existente
+ * @param {string} userId - ID del usuario
+ * @param {Object} userData - Datos a actualizar
+ * @returns {Promise<void>}
+ */
+export const updateUser = async (userId, userData) => {
+  try {
+    const updateData = {
+      ...userData,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Remover campos que no se deben actualizar
+    delete updateData.password;
+    delete updateData.email; // El email no se puede cambiar fácilmente
+
+    await updateDocument('users', userId, updateData);
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Eliminar un usuario (soft delete)
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<void>}
+ */
+export const deleteUser = async (userId) => {
+  try {
+    await updateDocument('users', userId, {
+      isActive: false,
+      deletedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener cursos inscritos de un usuario
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Array>} Cursos inscritos
+ */
+export const getUserEnrollments = async (userId) => {
+  try {
+    const enrollments = await queryCollection('enrollments', [
+      { type: 'where', field: 'userId', operator: '==', value: userId }
+    ]);
+
+    // Obtener detalles de cada curso
+    const coursesPromises = enrollments.map(async (enrollment) => {
+      const course = await getDocument('courses', enrollment.courseId);
+      return {
+        ...enrollment,
+        course
+      };
+    });
+
+    return await Promise.all(coursesPromises);
+  } catch (error) {
+    console.error('Error al obtener inscripciones:', error);
+    return [];
+  }
+};
+
+/**
+ * Inscribir usuario en un curso
+ * @param {string} userId - ID del usuario
+ * @param {string} courseId - ID del curso
+ * @returns {Promise<string>} ID de la inscripción
+ */
+export const enrollUserInCourse = async (userId, courseId) => {
+  try {
+    // Verificar si ya está inscrito
+    const existingEnrollments = await queryCollection('enrollments', [
+      { type: 'where', field: 'userId', operator: '==', value: userId },
+      { type: 'where', field: 'courseId', operator: '==', value: courseId }
+    ]);
+
+    if (existingEnrollments.length > 0) {
+      throw new Error('El usuario ya está inscrito en este curso');
+    }
+
+    const enrollment = {
+      userId,
+      courseId,
+      enrolledAt: new Date().toISOString(),
+      status: 'active'
+    };
+
+    const enrollmentId = await addDocument('enrollments', enrollment);
+
+    // Crear registro de progreso inicial
+    const initialProgress = {
+      userId,
+      courseId,
+      completedLessons: 0,
+      totalLessons: 0,
+      progressPercentage: 0,
+      completedLessonIds: [],
+      lastAccessedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    await addDocument('user_progress', initialProgress);
+
+    return enrollmentId;
+  } catch (error) {
+    console.error('Error al inscribir usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Desinscribir usuario de un curso
+ * @param {string} userId - ID del usuario
+ * @param {string} courseId - ID del curso
+ * @returns {Promise<void>}
+ */
+export const unenrollUserFromCourse = async (userId, courseId) => {
+  try {
+    const enrollments = await queryCollection('enrollments', [
+      { type: 'where', field: 'userId', operator: '==', value: userId },
+      { type: 'where', field: 'courseId', operator: '==', value: courseId }
+    ]);
+
+    if (enrollments.length === 0) {
+      throw new Error('No se encontró la inscripción');
+    }
+
+    await deleteDocument('enrollments', enrollments[0].id);
+  } catch (error) {
+    console.error('Error al desinscribir usuario:', error);
     throw error;
   }
 };

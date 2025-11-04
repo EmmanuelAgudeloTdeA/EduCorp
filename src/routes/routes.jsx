@@ -10,6 +10,8 @@ import Register from "../pages/auth/Register";
 import Home from "../pages/dashboard/Home";
 import Profile from "../pages/dashboard/Profile";
 import Courses from "../pages/dashboard/Courses";
+import CourseDetail from "../pages/dashboard/CourseDetail";
+import CourseViewer from "../pages/dashboard/CourseViewer";
 import MyProgress from "../pages/dashboard/MyProgress";
 import LearningStyleTest from "../pages/LearningStyleTest";
 import Users from "../pages/dashboard/admin/Users";
@@ -172,6 +174,16 @@ export const routers = createBrowserRouter([
         path: "courses",
         element: <Courses />,
         handle: { title: "Mis Cursos" },
+      },
+      {
+        path: "course-detail/:courseId",
+        element: <CourseDetail />,
+        handle: { title: "Detalle del Curso" },
+      },
+      {
+        path: "course-viewer/:courseId",
+        element: <CourseViewer />,
+        handle: { title: "Visor del Curso" },
       },
       {
         path: "my-progress",

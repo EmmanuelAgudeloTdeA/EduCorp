@@ -1,26 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsers } from '../../../services/UsersService.mjs';
-import { UserIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../../api/firebase/config';
-import { toast } from 'react-toastify';
+import { 
+  getAllUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser,
+  getUserEnrollments,
+  enrollUserInCourse,
+  unenrollUserFromCourse
+} from '../../../services/UsersService.mjs';
+import { getAllCourses } from '../../../services/CoursesService.mjs';
+import { 
+  UserIcon, 
+  MagnifyingGlassIcon, 
+  PlusIcon, 
+  PencilIcon, 
+  TrashIcon,
+  XMarkIcon,
+  AcademicCapIcon
+} from '@heroicons/react/24/outline';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newUserData, setNewUserData] = useState({
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [selectedUserForCourses, setSelectedUserForCourses] = useState(null);
+  const [userEnrollments, setUserEnrollments] = useState([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
     displayName: '',
+    name: ''
   });
 
   useEffect(() => {
     loadUsers();
+    loadCourses();
   }, []);
 
   const loadUsers = async () => {
@@ -30,80 +51,144 @@ const Users = () => {
       setUsers(data);
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
+      alert('Error al cargar los usuarios');
     } finally {
       setLoading(false);
     }
   };
 
-  // Crear una segunda instancia de Firebase para no cerrar la sesión del admin
-  const createUserAsAdmin = async (e) => {
+  const loadCourses = async () => {
+    try {
+      const data = await getAllCourses();
+      setCourses(data);
+    } catch (error) {
+      console.error('Error al cargar cursos:', error);
+    }
+  };
+
+  const handleOpenUserModal = (user = null) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        email: user.email || '',
+        password: '',
+        displayName: user.displayName || '',
+        name: user.name || ''
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        email: '',
+        password: '',
+        displayName: '',
+        name: ''
+      });
+    }
+    setShowUserModal(true);
+  };
+
+  const handleCloseUserModal = () => {
+    setShowUserModal(false);
+    setEditingUser(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitUser = async (e) => {
     e.preventDefault();
     
-    if (!newUserData.email || !newUserData.password) {
-      toast.error('Email y contraseña son requeridos');
-      return;
-    }
-
     try {
-      setCreating(true);
+      if (editingUser) {
+        // Editar usuario
+        await updateUser(editingUser.id, formData);
+        alert('Usuario actualizado exitosamente');
+      } else {
+        // Crear usuario
+        if (!formData.password) {
+          alert('La contraseña es requerida para crear un usuario');
+          return;
+        }
+        await createUser(formData);
+        alert('Usuario creado exitosamente');
+      }
 
-      // Crear una instancia temporal de Firebase Auth
-      const secondaryApp = initializeApp({
-        apiKey: "AIzaSyArj-AUlB8YDDnVXcSgdffDCqn0NKuVBGA",
-        authDomain: "educorp-67222.firebaseapp.com",
-        projectId: "educorp-67222",
-        storageBucket: "educorp-67222.firebasestorage.app",
-        messagingSenderId: "957217691651",
-        appId: "1:957217691651:web:e8ca9a5d70655477e21636"
-      }, 'Secondary');
-
-      const secondaryAuth = getAuth(secondaryApp);
-
-      // Crear el usuario en la instancia secundaria
-      const userCredential = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        newUserData.email,
-        newUserData.password
-      );
-
-      // Crear el documento del usuario en Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: newUserData.email,
-        displayName: newUserData.displayName || newUserData.email.split('@')[0],
-        createdAt: new Date().toISOString(),
-        learningStyleId: null,
-      });
-
-      // Cerrar sesión en la instancia secundaria
-      await secondaryAuth.signOut();
-
-      // Eliminar la app secundaria
-      await secondaryApp.delete();
-
-      toast.success('Usuario creado exitosamente');
-      
-      // Limpiar el formulario
-      setNewUserData({ email: '', password: '', displayName: '' });
-      setShowCreateModal(false);
-      
-      // Recargar la lista de usuarios
+      handleCloseUserModal();
       loadUsers();
     } catch (error) {
-      console.error('Error al crear usuario:', error);
-      
-      let errorMessage = 'Error al crear el usuario';
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'Este correo ya está registrado';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'La contraseña debe tener al menos 6 caracteres';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Correo electrónico inválido';
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setCreating(false);
+      console.error('Error al guardar usuario:', error);
+      alert('Error al guardar el usuario: ' + error.message);
     }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+      try {
+        await deleteUser(userId);
+        alert('Usuario eliminado exitosamente');
+        loadUsers();
+      } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        alert('Error al eliminar el usuario');
+      }
+    }
+  };
+
+  const handleOpenCoursesModal = async (user) => {
+    setSelectedUserForCourses(user);
+    setLoadingEnrollments(true);
+    setShowCoursesModal(true);
+    
+    try {
+      const enrollments = await getUserEnrollments(user.id);
+      setUserEnrollments(enrollments);
+    } catch (error) {
+      console.error('Error al cargar inscripciones:', error);
+      alert('Error al cargar las inscripciones del usuario');
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
+
+  const handleCloseCoursesModal = () => {
+    setShowCoursesModal(false);
+    setSelectedUserForCourses(null);
+    setUserEnrollments([]);
+  };
+
+  const handleEnrollCourse = async (courseId) => {
+    try {
+      await enrollUserInCourse(selectedUserForCourses.id, courseId);
+      alert('Usuario inscrito exitosamente');
+      const enrollments = await getUserEnrollments(selectedUserForCourses.id);
+      setUserEnrollments(enrollments);
+    } catch (error) {
+      console.error('Error al inscribir usuario:', error);
+      alert('Error al inscribir usuario: ' + error.message);
+    }
+  };
+
+  const handleUnenrollCourse = async (courseId) => {
+    if (window.confirm('¿Estás seguro de que deseas desinscribir al usuario de este curso?')) {
+      try {
+        await unenrollUserFromCourse(selectedUserForCourses.id, courseId);
+        alert('Usuario desinscrito exitosamente');
+        const enrollments = await getUserEnrollments(selectedUserForCourses.id);
+        setUserEnrollments(enrollments);
+      } catch (error) {
+        console.error('Error al desinscribir usuario:', error);
+        alert('Error al desinscribir usuario');
+      }
+    }
+  };
+
+  const isUserEnrolledInCourse = (courseId) => {
+    return userEnrollments.some(enrollment => enrollment.courseId === courseId);
   };
 
   const filteredUsers = users.filter(user => 
@@ -127,12 +212,12 @@ const Users = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
+        <button 
+          onClick={() => handleOpenUserModal()}
           className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <PlusIcon className="w-5 h-5 mr-2" />
-          Crear Usuario
+          Nuevo Usuario
         </button>
       </div>
 
@@ -295,12 +380,27 @@ const Users = () => {
                       : 'N/A'
                     }
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">
-                      Ver
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                    <button 
+                      onClick={() => handleOpenCoursesModal(user)}
+                      className="text-purple-600 hover:text-purple-900"
+                      title="Gestionar cursos"
+                    >
+                      <AcademicCapIcon className="w-5 h-5 inline" />
                     </button>
-                    <button className="text-gray-600 hover:text-gray-900">
-                      Editar
+                    <button 
+                      onClick={() => handleOpenUserModal(user)}
+                      className="text-blue-600 hover:text-blue-900"
+                      title="Editar"
+                    >
+                      <PencilIcon className="w-5 h-5 inline" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Eliminar"
+                    >
+                      <TrashIcon className="w-5 h-5 inline" />
                     </button>
                   </td>
                 </tr>
@@ -352,9 +452,174 @@ const Users = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de crear/editar usuario */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-black opacity-50" onClick={handleCloseUserModal}></div>
+            
+            <div className="relative inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg text-black">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                </h3>
+                <button onClick={handleCloseUserModal} className="text-gray-400 hover:text-gray-500">
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre Completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="displayName"
+                    value={formData.displayName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!!editingUser}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  />
+                  {editingUser && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      El email no se puede modificar
+                    </p>
+                  )}
+                </div>
+
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contraseña *
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      minLength={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Mínimo 6 caracteres
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={handleCloseUserModal}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    {editingUser ? 'Actualizar' : 'Crear'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de gestión de cursos */}
+      {showCoursesModal && selectedUserForCourses && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-black opacity-50" onClick={handleCloseCoursesModal}></div>
+            
+            <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg text-black">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Gestionar Cursos de {selectedUserForCourses.displayName || selectedUserForCourses.email}
+                </h3>
+                <button onClick={handleCloseCoursesModal} className="text-gray-400 hover:text-gray-500">
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+
+              {loadingEnrollments ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Cargando...</p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {courses.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No hay cursos disponibles</p>
+                  ) : (
+                    courses.map((course) => {
+                      const isEnrolled = isUserEnrolledInCourse(course.id);
+                      return (
+                        <div 
+                          key={course.id} 
+                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{course.title}</h4>
+                            <p className="text-sm text-gray-500">{course.shortDescription}</p>
+                          </div>
+                          <div className="ml-4">
+                            {isEnrolled ? (
+                              <button
+                                onClick={() => handleUnenrollCourse(course.id)}
+                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
+                              >
+                                Desinscribir
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleEnrollCourse(course.id)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                              >
+                                Inscribir
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={handleCloseCoursesModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Users;
-

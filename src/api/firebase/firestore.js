@@ -7,6 +7,7 @@ import {
   getDoc, 
   updateDoc, 
   deleteDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -27,9 +28,17 @@ export const getDocument = async (collectionName, id) => {
 };
 
 // Agregar un nuevo documento
-export const addDocument = async (collectionName, data) => {
-  const docRef = await addDoc(collection(db, collectionName), data);
-  return docRef.id;
+export const addDocument = async (collectionName, data, customId = null) => {
+  if (customId) {
+    // Si se proporciona un ID personalizado, usar setDoc
+    const docRef = doc(db, collectionName, customId);
+    await setDoc(docRef, data);
+    return customId;
+  } else {
+    // Si no, usar addDoc para generar ID automático
+    const docRef = await addDoc(collection(db, collectionName), data);
+    return docRef.id;
+  }
 };
 
 // Actualizar un documento existente
