@@ -7,8 +7,9 @@ import {
   queryCollection 
 } from '../api/firebase/firestore';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, auth } from '../api/firebase/config';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { db } from '../api/firebase/config';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 /**
  * Obtiene los roles de un usuario
@@ -104,27 +105,34 @@ export const getUserById = async (userId) => {
  * @returns {Promise<string>} ID del usuario creado
  */
 export const createUser = async (userData) => {
+  let secondaryApp = null;
+  
   try {
-    // Crear usuario en Firebase Auth
+    // Crear una instancia secundaria de Firebase para no cerrar la sesión del admin
+    secondaryApp = initializeApp({
+      apiKey: "AIzaSyArj-AUlB8YDDnVXcSgdffDCqn0NKuVBGA",
+      authDomain: "educorp-67222.firebaseapp.com",
+      projectId: "educorp-67222",
+      storageBucket: "educorp-67222.firebasestorage.app",
+      messagingSenderId: "957217691651",
+      appId: "1:957217691651:web:e8ca9a5d70655477e21636"
+    }, 'Secondary');
+
+    const secondaryAuth = getAuth(secondaryApp);
+
+    // Crear usuario en Firebase Auth usando la instancia secundaria
     const userCredential = await createUserWithEmailAndPassword(
-      auth, 
+      secondaryAuth, 
       userData.email, 
       userData.password
     );
 
     const user = userCredential.user;
 
-    // Actualizar perfil con displayName
-    if (userData.displayName) {
-      await updateProfile(user, {
-        displayName: userData.displayName
-      });
-    }
-
     // Crear documento en Firestore
     const userDoc = {
       email: userData.email,
-      displayName: userData.displayName || '',
+      displayName: userData.displayName || userData.email.split('@')[0],
       name: userData.name || userData.displayName || '',
       learningStyleId: userData.learningStyleId || null,
       createdAt: new Date().toISOString(),
@@ -146,10 +154,22 @@ export const createUser = async (userData) => {
       });
     }
 
+    // Cerrar sesión en la instancia secundaria
+    await secondaryAuth.signOut();
+
     return user.uid;
   } catch (error) {
     console.error('Error al crear usuario:', error);
     throw error;
+  } finally {
+    // Eliminar la app secundaria si existe
+    if (secondaryApp) {
+      try {
+        await secondaryApp.delete();
+      } catch (deleteError) {
+        console.error('Error al eliminar app secundaria:', deleteError);
+      }
+    }
   }
 };
 
