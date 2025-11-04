@@ -1,10 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   getUserCoursesInProgress,
   getUserPendingCourses,
   getUserStatistics 
 } from '../../services/CoursesService.mjs';
+import { getUserById } from '../../services/UsersService.mjs';
+import { getLearningStyleById } from '../../services/LearningStylesService.mjs';
 import { 
   AcademicCapIcon, 
   CheckCircleIcon,
@@ -12,11 +15,13 @@ import {
   ChartBarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  UserIcon
+  UserIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 const Home = () => {
   const { user, userData, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
   
   // Estado para controlar la carga inicial
@@ -29,17 +34,28 @@ const Home = () => {
     cursosPendientes: 0,
     cursosEnProgreso: 0
   });
+  const [userInfo, setUserInfo] = useState(null);
+  const [learningStyle, setLearningStyle] = useState(null);
 
   // Efecto para cargar datos de Firebase
   useEffect(() => {
     const loadData = async () => {
       if (!authLoading && user?.uid) {
         try {
-          const [progressData, pendingData, stats] = await Promise.all([
+          const [progressData, pendingData, stats, userInfoData] = await Promise.all([
             getUserCoursesInProgress(user.uid),
             getUserPendingCourses(user.uid),
-            getUserStatistics(user.uid)
+            getUserStatistics(user.uid),
+            getUserById(user.uid)
           ]);
+          
+          setUserInfo(userInfoData);
+          
+          // Cargar estilo de aprendizaje si existe
+          if (userInfoData?.learningStyleId) {
+            const style = await getLearningStyleById(userInfoData.learningStyleId);
+            setLearningStyle(style);
+          }
           
           // Mapear los datos al formato esperado por la UI
           const mappedProgress = progressData.map(item => ({
@@ -110,7 +126,7 @@ const Home = () => {
   return (
     <div className="space-y-6">
       {/* Header con información del usuario */}
-      <div className="text-black rounded-lg shadow-lg p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
@@ -119,9 +135,46 @@ const Home = () => {
             <p className="mt-2 opacity-90 flex items-center space-x-2">
               <span>{user?.email}</span>
             </p>
+            {/* Mostrar estilo de aprendizaje */}
+            {learningStyle && (
+              <div className="mt-3 inline-flex items-center bg-white bg-opacity-20 px-4 py-2 rounded-lg">
+                <SparklesIcon className="w-5 h-5 mr-2" />
+                <span className="text-sm font-medium">
+                  Tu estilo: <strong>{learningStyle.name}</strong>
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="hidden md:block">
+            <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <UserIcon className="w-12 h-12" />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Alerta si no tiene estilo de aprendizaje */}
+      {!learningStyle && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+          <div className="flex items-start">
+            <SparklesIcon className="w-6 h-6 text-yellow-600 mr-3 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-yellow-800 mb-1">
+                ¡Descubre tu estilo de aprendizaje!
+              </h3>
+              <p className="text-sm text-yellow-700 mb-2">
+                Realiza nuestro test rápido para personalizar tu experiencia de aprendizaje.
+              </p>
+              <button
+                onClick={() => navigate('/learning-style-test')}
+                className="text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
+              >
+                Realizar test ahora →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Estadísticas de cursos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
