@@ -198,16 +198,44 @@ export const updateUser = async (userId, userData) => {
 };
 
 /**
- * Eliminar un usuario (soft delete)
+ * Eliminar un usuario completamente
  * @param {string} userId - ID del usuario
  * @returns {Promise<void>}
  */
 export const deleteUser = async (userId) => {
   try {
-    await updateDocument('users', userId, {
-      isActive: false,
-      deletedAt: new Date().toISOString()
-    });
+    // Eliminar inscripciones del usuario
+    const enrollments = await queryCollection('enrollments', [
+      { type: 'where', field: 'userId', operator: '==', value: userId }
+    ]);
+    
+    for (const enrollment of enrollments) {
+      await deleteDocument('enrollments', enrollment.id);
+    }
+
+    // Eliminar progreso del usuario
+    const progressRecords = await queryCollection('user_progress', [
+      { type: 'where', field: 'userId', operator: '==', value: userId }
+    ]);
+    
+    for (const progress of progressRecords) {
+      await deleteDocument('user_progress', progress.id);
+    }
+
+    // Eliminar roles del usuario
+    const userRoles = await queryCollection('user_roles', [
+      { type: 'where', field: 'userId', operator: '==', value: userId }
+    ]);
+    
+    for (const userRole of userRoles) {
+      await deleteDocument('user_roles', userRole.id);
+    }
+
+    // Finalmente, eliminar el documento del usuario
+    await deleteDocument('users', userId);
+
+    // Nota: No eliminamos el usuario de Firebase Auth para evitar problemas de autenticación
+    // El usuario ya no podrá acceder porque su documento en Firestore no existe
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     throw error;

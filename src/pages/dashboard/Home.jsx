@@ -126,7 +126,7 @@ const Home = () => {
   return (
     <div className="space-y-6">
       {/* Header con información del usuario */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-6">
+      <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
@@ -340,104 +340,40 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Grid de 2 columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cursos pendientes */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">
-              Cursos Pendientes
-            </h2>
-            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
-              {cursosPendientes.length} cursos
-            </span>
-          </div>
-          <div className="space-y-3">
-            {cursosPendientes.map((curso) => (
-              <div 
-                key={curso.id} 
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-xl">
-                    {curso.imagen}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {curso.nombre}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {curso.estudiantes} estudiantes inscritos
-                    </p>
-                  </div>
-                </div>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  Comenzar
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Actividad reciente */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Actividad Reciente
+      {/* Cursos pendientes */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">
+            Cursos Pendientes
           </h2>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3 pb-4 border-b border-gray-100">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
+            {cursosPendientes.length} cursos
+          </span>
+        </div>
+        <div className="space-y-3">
+          {cursosPendientes.map((curso) => (
+            <div 
+              key={curso.id} 
+              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-xl">
+                  {curso.imagen}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {curso.nombre}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {curso.estudiantes} estudiantes inscritos
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  Completaste "Introducción a APIs"
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hace 2 horas
-                </p>
-              </div>
+              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                Comenzar
+              </button>
             </div>
-            <div className="flex items-start space-x-3 pb-4 border-b border-gray-100">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <AcademicCapIcon className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  Nuevo curso disponible: "TypeScript Pro"
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hace 5 horas
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 pb-4 border-b border-gray-100">
-              <div className="bg-orange-100 p-2 rounded-lg">
-                <ChartBarIcon className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  Alcanzaste 70% en "React Avanzado"
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hace 1 día
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <ClockIcon className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  Recordatorio: Continúa "Node.js y Express"
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hace 2 días
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
