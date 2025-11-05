@@ -126,7 +126,7 @@ const Home = () => {
   return (
     <div className="space-y-6">
       {/* Header con información del usuario */}
-      <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-6">
+      <div className="text-black  rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
@@ -146,8 +146,8 @@ const Home = () => {
             )}
           </div>
           <div className="hidden md:block">
-            <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <UserIcon className="w-12 h-12" />
+            <div className="w-20 h-20 rounded-full flex items-center justify-center">
+              <UserIcon className="w-12 h-12 text-black" />
             </div>
           </div>
         </div>

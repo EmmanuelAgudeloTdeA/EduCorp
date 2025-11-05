@@ -116,7 +116,7 @@ const Profile = () => {
                   </div>
                   <button
                     onClick={handleRetakeTest}
-                    className="flex items-center px-3 py-1.5 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="flex items-center px-3 py-1.5 bg-white bg-opacity-20 hover:bg-opacity-30 text-black text-sm font-medium rounded-lg transition-colors"
                   >
                     <ArrowPathIcon className="w-4 h-4 mr-1" />
                     Hacer de nuevo
