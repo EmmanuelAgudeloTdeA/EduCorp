@@ -59,31 +59,46 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkLearningStyle = async () => {
-      if (!user) return;
+      if (!user) {
+        setCheckingStyle(false);
+        return;
+      }
 
       // Esperar a que los roles estén cargados antes de verificar
       // Si userRoles está undefined o null, aún no se han cargado
       if (userRoles === null || userRoles === undefined) {
+        console.log('Esperando a que se carguen los roles...');
+        setCheckingStyle(true); // Mantener en carga mientras se obtienen roles
         return;
       }
 
+      console.log('Roles del usuario:', userRoles);
+
       // Si es admin, no es obligatorio tener estilo de aprendizaje
-      if (isAdmin()) {
+      // Verificar directamente en el array de roles
+      const adminRole = userRoles.find(role => role && role.name === 'admin');
+      if (adminRole) {
+        console.log('✅ Usuario es admin, no requiere estilo de aprendizaje');
         setHasStyle(true);
         setCheckingStyle(false);
         return;
       }
 
+      console.log('❌ Usuario NO es admin, verificando estilo de aprendizaje...');
+
       // Para usuarios no admin, verificar si tienen estilo de aprendizaje
       const userData = await getDocument("users", user.uid);
+      console.log('Usuario no es admin, verificando estilo de aprendizaje:', userData?.learningStyleId);
       setHasStyle(!!userData?.learningStyleId);
       setCheckingStyle(false);
     };
 
     if (!loading && user) {
       checkLearningStyle();
+    } else if (!loading && !user) {
+      setCheckingStyle(false);
     }
-  }, [user, loading, isAdmin, userRoles]);
+  }, [user, loading, userRoles]);
 
   if (loading || checkingStyle) {
     return <div>Cargando...</div>;
