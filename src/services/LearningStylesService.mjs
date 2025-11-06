@@ -139,15 +139,23 @@ export const saveAttemptAnswers = async (attemptId, answers) => {
  */
 export const calculateLearningStyle = async (answers) => {
   try {
+    console.log('📊 Calculando estilo de aprendizaje con respuestas:', answers);
+    
     // Contar puntos por estilo de aprendizaje
     const styleScores = {};
     
-    answers.forEach(answer => {
+    answers.forEach((answer, index) => {
+      console.log(`Respuesta ${index + 1}:`, answer);
       const styleId = answer.learningStyleId;
       if (styleId) {
         styleScores[styleId] = (styleScores[styleId] || 0) + (answer.points || 1);
+        console.log(`  ✓ Sumando ${answer.points || 1} punto(s) a estilo ${styleId}`);
+      } else {
+        console.warn(`  ⚠️ Respuesta sin learningStyleId:`, answer);
       }
     });
+    
+    console.log('Puntuaciones por estilo:', styleScores);
     
     // Encontrar el estilo con mayor puntuación
     let maxScore = 0;
@@ -159,6 +167,12 @@ export const calculateLearningStyle = async (answers) => {
         dominantStyleId = styleId;
       }
     });
+    
+    console.log(`Estilo dominante: ${dominantStyleId} con ${maxScore} puntos`);
+    
+    if (!dominantStyleId) {
+      throw new Error('No se encontraron respuestas con learningStyleId válido');
+    }
     
     return dominantStyleId;
   } catch (error) {

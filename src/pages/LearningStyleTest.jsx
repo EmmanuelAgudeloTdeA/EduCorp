@@ -93,44 +93,64 @@ const LearningStyleTest = () => {
 
     try {
       setSubmitting(true);
+      console.log('🚀 Iniciando proceso de envío del test...');
 
       // 1. Guardar el intento
+      console.log('📝 Paso 1: Guardando intento...');
       const attemptId = await saveAssessmentAttempt({
         userId: user.uid,
         assessmentId: assessment.id,
         status: 'completed',
         score: 0,
       });
+      console.log('✅ Intento guardado con ID:', attemptId);
 
       // 2. Guardar las respuestas
+      console.log('📝 Paso 2: Guardando respuestas...');
       const answersArray = Object.values(answers);
+      console.log('Respuestas a guardar:', answersArray.length);
       await saveAttemptAnswers(attemptId, answersArray);
+      console.log('✅ Respuestas guardadas');
 
       // 3. Calcular el estilo de aprendizaje
+      console.log('📝 Paso 3: Calculando estilo de aprendizaje...');
       const styleId = await calculateLearningStyle(answersArray);
+      console.log('✅ Estilo calculado:', styleId);
 
       if (!styleId) {
         throw new Error('No se pudo determinar el estilo de aprendizaje');
       }
 
       // 4. Guardar el estilo de aprendizaje del usuario
+      console.log('📝 Paso 4: Guardando estilo de aprendizaje del usuario...');
       await saveUserLearningStyle(user.uid, styleId, attemptId);
+      console.log('✅ Estilo guardado en user_learning_style');
 
       // 5. Actualizar el documento del usuario
+      console.log('📝 Paso 5: Actualizando documento del usuario...');
       await updateUserLearningStyle(user.uid, styleId);
+      console.log('✅ Documento de usuario actualizado');
 
       // 6. Obtener información del estilo de aprendizaje
+      console.log('📝 Paso 6: Obteniendo información del estilo...');
       const learningStyle = await getLearningStyleById(styleId);
+      console.log('✅ Estilo obtenido:', learningStyle);
       setLearningStyleResult(learningStyle);
 
       // 7. Mostrar notificación con el resultado
       toast.success(`¡Felicitaciones! 🎉 Tu estilo de aprendizaje es: ${learningStyle.name}`);
 
       // 8. Mostrar resultado
+      console.log('✅ Proceso completado exitosamente');
       setShowResult(true);
     } catch (error) {
-      console.error('Error al enviar el test:', error);
-      toast.error('Error al procesar el test. Por favor, intenta de nuevo.');
+      console.error('❌ Error al enviar el test:', error);
+      console.error('Detalles del error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      toast.error(`Error al procesar el test: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
