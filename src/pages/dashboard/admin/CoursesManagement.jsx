@@ -17,6 +17,7 @@ import {
   deleteCourse 
 } from '../../../services/CoursesService.mjs';
 import { uploadCourseVideo, uploadCourseThumbnail } from '../../../api/firebase/storage';
+import { toast } from 'react-toastify';
 
 const CoursesManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -53,7 +54,7 @@ const CoursesManagement = () => {
       setCourses(data);
     } catch (error) {
       console.error('Error al cargar cursos:', error);
-      alert('Error al cargar los cursos');
+      toast.error('Error al cargar los cursos');
     } finally {
       setLoading(false);
     }
@@ -116,7 +117,7 @@ const CoursesManagement = () => {
     if (file && file.type.startsWith('video/')) {
       setVideoFile(file);
     } else {
-      alert('Por favor selecciona un archivo de video válido');
+      toast.error('Por favor selecciona un archivo de video válido');
     }
   };
 
@@ -125,7 +126,7 @@ const CoursesManagement = () => {
     if (file && file.type.startsWith('image/')) {
       setThumbnailFile(file);
     } else {
-      alert('Por favor selecciona una imagen válida');
+      toast.error('Por favor selecciona una imagen válida');
     }
   };
 
@@ -159,17 +160,17 @@ const CoursesManagement = () => {
 
       if (editingCourse) {
         await updateCourse(editingCourse.id, courseData);
-        alert('Curso actualizado exitosamente');
+        toast.success('Curso actualizado exitosamente');
       } else {
         await createCourse(courseData);
-        alert('Curso creado exitosamente');
+        toast.success('Curso creado exitosamente');
       }
 
       handleCloseModal();
       loadCourses();
     } catch (error) {
       console.error('Error al guardar curso:', error);
-      alert('Error al guardar el curso: ' + error.message);
+      toast.error('Error al guardar el curso: ' + error.message);
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -180,11 +181,11 @@ const CoursesManagement = () => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este curso?')) {
       try {
         await deleteCourse(courseId);
-        alert('Curso eliminado exitosamente');
+        toast.success('Curso eliminado exitosamente');
         loadCourses();
       } catch (error) {
         console.error('Error al eliminar curso:', error);
-        alert('Error al eliminar el curso');
+        toast.error('Error al eliminar el curso');
       }
     }
   };

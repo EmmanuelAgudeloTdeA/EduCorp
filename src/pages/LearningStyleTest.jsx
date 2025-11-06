@@ -10,6 +10,7 @@ import {
   getLearningStyleById
 } from '../services/LearningStylesService.mjs';
 import { updateUserLearningStyle } from '../services/UsersService.mjs';
+import { toast } from 'react-toastify';
 import {
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -86,7 +87,7 @@ const LearningStyleTest = () => {
     );
 
     if (unansweredQuestions.length > 0) {
-      alert(`Por favor responde todas las preguntas. Faltan ${unansweredQuestions.length} pregunta(s).`);
+      toast.warning(`Por favor responde todas las preguntas. Faltan ${unansweredQuestions.length} pregunta(s).`);
       return;
     }
 
@@ -122,14 +123,14 @@ const LearningStyleTest = () => {
       const learningStyle = await getLearningStyleById(styleId);
       setLearningStyleResult(learningStyle);
 
-      // 7. Mostrar alert con el resultado
-      alert(`¡Felicitaciones! 🎉\n\nTu estilo de aprendizaje es: ${learningStyle.name}\n\nAhora tu experiencia de aprendizaje será personalizada según tus preferencias.`);
+      // 7. Mostrar notificación con el resultado
+      toast.success(`¡Felicitaciones! 🎉 Tu estilo de aprendizaje es: ${learningStyle.name}`);
 
       // 8. Mostrar resultado
       setShowResult(true);
     } catch (error) {
       console.error('Error al enviar el test:', error);
-      alert('Error al procesar el test. Por favor, intenta de nuevo.');
+      toast.error('Error al procesar el test. Por favor, intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }

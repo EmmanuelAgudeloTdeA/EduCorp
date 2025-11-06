@@ -7,6 +7,7 @@ import {
   markLessonComplete,
   isUserEnrolled
 } from '../../services/CoursesService.mjs';
+import { toast } from 'react-toastify';
 import { 
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -41,7 +42,7 @@ const CourseViewer = () => {
       // Verificar si está inscrito
       const enrolled = await isUserEnrolled(user.uid, courseId);
       if (!enrolled) {
-        alert('No estás inscrito en este curso');
+        toast.error('No estás inscrito en este curso');
         navigate(`/dashboard/course-detail/${courseId}`);
         return;
       }
@@ -60,7 +61,7 @@ const CourseViewer = () => {
       }
     } catch (error) {
       console.error('Error al cargar curso:', error);
-      alert('Error al cargar el curso');
+      toast.error('Error al cargar el curso');
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,7 @@ const CourseViewer = () => {
       }
     } catch (error) {
       console.error('Error al marcar como completada:', error);
-      alert('Error al marcar la lección como completada');
+      toast.error('Error al marcar la lección como completada');
     } finally {
       setMarkingComplete(false);
     }

@@ -19,6 +19,7 @@ import {
   XMarkIcon,
   AcademicCapIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -51,7 +52,7 @@ const Users = () => {
       setUsers(data);
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
-      alert('Error al cargar los usuarios');
+      toast.error('Error al cargar los usuarios');
     } finally {
       setLoading(false);
     }
@@ -107,22 +108,22 @@ const Users = () => {
       if (editingUser) {
         // Editar usuario
         await updateUser(editingUser.id, formData);
-        alert('Usuario actualizado exitosamente');
+        toast.success('Usuario actualizado exitosamente');
       } else {
         // Crear usuario
         if (!formData.password) {
-          alert('La contraseña es requerida para crear un usuario');
+          toast.error('La contraseña es requerida para crear un usuario');
           return;
         }
         await createUser(formData);
-        alert('Usuario creado exitosamente');
+        toast.success('Usuario creado exitosamente');
       }
 
       handleCloseUserModal();
       loadUsers();
     } catch (error) {
       console.error('Error al guardar usuario:', error);
-      alert('Error al guardar el usuario: ' + error.message);
+      toast.error('Error al guardar el usuario: ' + error.message);
     }
   };
 
@@ -130,11 +131,11 @@ const Users = () => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
       try {
         await deleteUser(userId);
-        alert('Usuario eliminado exitosamente');
+        toast.success('Usuario eliminado exitosamente');
         loadUsers();
       } catch (error) {
         console.error('Error al eliminar usuario:', error);
-        alert('Error al eliminar el usuario');
+        toast.error('Error al eliminar el usuario');
       }
     }
   };
@@ -149,7 +150,7 @@ const Users = () => {
       setUserEnrollments(enrollments);
     } catch (error) {
       console.error('Error al cargar inscripciones:', error);
-      alert('Error al cargar las inscripciones del usuario');
+      toast.error('Error al cargar las inscripciones del usuario');
     } finally {
       setLoadingEnrollments(false);
     }
@@ -164,12 +165,12 @@ const Users = () => {
   const handleEnrollCourse = async (courseId) => {
     try {
       await enrollUserInCourse(selectedUserForCourses.id, courseId);
-      alert('Usuario inscrito exitosamente');
+      toast.success('Usuario inscrito exitosamente');
       const enrollments = await getUserEnrollments(selectedUserForCourses.id);
       setUserEnrollments(enrollments);
     } catch (error) {
       console.error('Error al inscribir usuario:', error);
-      alert('Error al inscribir usuario: ' + error.message);
+      toast.error('Error al inscribir usuario: ' + error.message);
     }
   };
 
@@ -177,12 +178,12 @@ const Users = () => {
     if (window.confirm('¿Estás seguro de que deseas desinscribir al usuario de este curso?')) {
       try {
         await unenrollUserFromCourse(selectedUserForCourses.id, courseId);
-        alert('Usuario desinscrito exitosamente');
+        toast.success('Usuario desinscrito exitosamente');
         const enrollments = await getUserEnrollments(selectedUserForCourses.id);
         setUserEnrollments(enrollments);
       } catch (error) {
         console.error('Error al desinscribir usuario:', error);
-        alert('Error al desinscribir usuario');
+        toast.error('Error al desinscribir usuario');
       }
     }
   };

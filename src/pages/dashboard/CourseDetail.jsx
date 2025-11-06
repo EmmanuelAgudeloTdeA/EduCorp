@@ -7,6 +7,7 @@ import {
   isUserEnrolled,
   enrollUserInCourse 
 } from '../../services/CoursesService.mjs';
+import { toast } from 'react-toastify';
 import { 
   AcademicCapIcon,
   ClockIcon,
@@ -53,7 +54,7 @@ const CourseDetail = () => {
       }
     } catch (error) {
       console.error('Error al cargar curso:', error);
-      alert('Error al cargar el curso');
+      toast.error('Error al cargar el curso');
     } finally {
       setLoading(false);
     }
@@ -63,12 +64,12 @@ const CourseDetail = () => {
     try {
       setEnrolling(true);
       await enrollUserInCourse(user.uid, courseId);
-      alert('¡Te has inscrito exitosamente al curso!');
+      toast.success('¡Te has inscrito exitosamente al curso!');
       setEnrolled(true);
       loadCourseData();
     } catch (error) {
       console.error('Error al inscribirse:', error);
-      alert('Error al inscribirse al curso');
+      toast.error('Error al inscribirse al curso');
     } finally {
       setEnrolling(false);
     }
